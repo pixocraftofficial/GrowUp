@@ -205,7 +205,7 @@ export default function Dashboard() {
               <div className="flex gap-2" style={{ height: "112px" }}>
                 {recentDays.map((day, i) => {
                   const barH = day.hasData ? Math.max(6, Math.round((day.score / 22) * 100)) : 0;
-                  const color = day.status ? STATUS_COLOR[day.status.key] : undefined;
+                  const color = day.status ? day.status.hex : undefined;
                   return (
                     <div key={day.date} className="flex-1 flex flex-col items-center gap-1 group">
                       {/* Score tooltip on hover */}
