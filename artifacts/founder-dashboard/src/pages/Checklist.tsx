@@ -1,30 +1,122 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useChallenge } from "../hooks/useChallenge";
+import { useChallenge, getLocalDateStr } from "../hooks/useChallenge";
 import { calculateScore, getStatus } from "../lib/scoring";
-import { CategorySection } from "../components/CategorySection";
-import { BookOpen, Mic, Briefcase, Zap, Settings, Dumbbell, Brain, Activity } from "lucide-react";
-import { Checkbox } from "../components/ui/checkbox";
+import { BookOpen, Mic, Briefcase, Zap, Settings, Dumbbell, Brain, Activity, Check } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Switch } from "../components/ui/switch";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent, CardHeader } from "../components/ui/card";
+import { motion } from "framer-motion";
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  learning: <BookOpen className="w-4 h-4" />,
+  english: <Mic className="w-4 h-4" />,
+  sales: <Briefcase className="w-4 h-4" />,
+  growth: <Zap className="w-4 h-4" />,
+  ops: <Settings className="w-4 h-4" />,
+  knowledge: <Brain className="w-4 h-4" />,
+  fitness: <Dumbbell className="w-4 h-4" />,
+  founder: <Activity className="w-4 h-4" />,
+};
+
+function CheckRow({
+  id, label, checked, onChange
+}: { id: string; label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-left group
+        ${checked
+          ? "bg-primary/10 hover:bg-primary/15"
+          : "hover:bg-muted/50"
+        }`}
+    >
+      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-150
+        ${checked
+          ? "bg-primary border-primary shadow-sm shadow-primary/30"
+          : "border-border group-hover:border-primary/50"
+        }`}
+      >
+        {checked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+      </div>
+      <span className={`text-sm font-medium transition-colors ${checked ? "text-foreground line-through decoration-primary/40" : "text-foreground/80"}`}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function NumberRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-3 px-3 py-2">
+      <Label className="flex-1 text-sm text-muted-foreground font-medium">{label}</Label>
+      <Input
+        type="number"
+        min={0}
+        className="w-24 h-8 text-right bg-muted/40 border-border/50 focus-visible:ring-primary focus-visible:border-primary text-sm font-mono"
+        value={value || ""}
+        placeholder="0"
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+      />
+    </div>
+  );
+}
+
+interface SectionProps {
+  title: string;
+  pts?: number;
+  iconKey: string;
+  delay?: number;
+  children: React.ReactNode;
+}
+
+function Section({ title, pts, iconKey, delay = 0, children }: SectionProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+    >
+      <Card className="bg-card border-border/60 hover:border-border transition-colors overflow-hidden">
+        <CardHeader className="px-5 py-4 pb-3 border-b border-border/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                {CATEGORY_ICONS[iconKey]}
+              </div>
+              <span className="font-semibold text-sm">{title}</span>
+            </div>
+            {pts !== undefined && (
+              <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                {pts} pts
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="px-2 py-2 space-y-0.5">
+          {children}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
 
 export default function Checklist() {
   const { getDay, updateDay } = useChallenge();
-  const dateStr = new Date().toISOString().split("T")[0];
-
+  const dateStr = getLocalDateStr();
   const [data, setData] = useState(() => getDay(dateStr));
   const [improvementIdea, setImprovementIdea] = useState(data.improvementIdea);
   const [bookName, setBookName] = useState(data.bookName);
   const [notes, setNotes] = useState(data.notes);
 
   useEffect(() => {
-    const todayData = getDay(dateStr);
-    setData(todayData);
-    setImprovementIdea(todayData.improvementIdea);
-    setBookName(todayData.bookName);
-    setNotes(todayData.notes);
+    const d = getDay(dateStr);
+    setData(d);
+    setImprovementIdea(d.improvementIdea);
+    setBookName(d.bookName);
+    setNotes(d.notes);
   }, [dateStr, getDay]);
 
   const updateField = (field: keyof typeof data, value: any) => {
@@ -33,6 +125,14 @@ export default function Checklist() {
       updateDay(dateStr, next);
       return next;
     });
+  };
+
+  const makeDebounce = () => {
+    const t = useRef<NodeJS.Timeout>();
+    return (fn: () => void, ms = 400) => {
+      clearTimeout(t.current);
+      t.current = setTimeout(fn, ms);
+    };
   };
 
   const ideaTimer = useRef<NodeJS.Timeout>();
@@ -48,89 +148,75 @@ export default function Checklist() {
   const status = getStatus(score);
   const pct = Math.round((score / 22) * 100);
 
-  const CheckboxItem = ({ field, label }: { field: keyof typeof data; label: string }) => (
-    <div className="flex items-center gap-3 py-2.5 px-1 rounded-lg hover:bg-muted/30 transition-colors">
-      <Checkbox
-        id={String(field)}
-        checked={!!data[field]}
-        onCheckedChange={(c) => updateField(field, !!c)}
-        className="shrink-0 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-      />
-      <Label htmlFor={String(field)} className="flex-1 cursor-pointer text-sm font-medium text-foreground/85 leading-snug">
-        {label}
-      </Label>
-    </div>
-  );
-
-  const NumberItem = ({ field, label }: { field: keyof typeof data; label: string }) => (
-    <div className="flex items-center gap-3 py-1 px-1">
-      <Label className="flex-1 text-sm text-muted-foreground">{label}</Label>
-      <Input
-        type="number"
-        className="w-20 h-9 text-right bg-background/60 border-border/50 focus-visible:ring-primary text-sm"
-        value={(data[field] as number) || ""}
-        onChange={(e) => updateField(field, Number(e.target.value) || 0)}
-      />
-    </div>
-  );
+  const dateLabel = new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
 
   return (
-    <div className="space-y-4">
-      {/* Sticky score bar */}
-      <div className="sticky top-14 z-10 -mx-4 px-4 py-2 bg-background/95 backdrop-blur border-b border-border/50">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">
-              {new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold font-mono text-primary">{score}<span className="text-muted-foreground text-base font-normal">/22</span></span>
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${status.colorClass}`}>
-              {pct}%
+    <div className="space-y-5">
+      {/* Sticky score header */}
+      <div className="sticky top-14 z-10 -mx-4 md:-mx-8 px-4 md:px-8 py-3 bg-background/90 backdrop-blur-md border-b border-border/50">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground font-medium hidden sm:block">{dateLabel}</p>
+          <p className="text-sm text-muted-foreground font-medium sm:hidden">
+            {new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+          </p>
+          <div className="flex items-center gap-4">
+            <div className="h-8 flex items-center gap-2 px-3 bg-card border border-border/60 rounded-xl">
+              <span className="text-xl font-bold font-mono text-primary leading-none">{score}</span>
+              <span className="text-muted-foreground text-sm">/22</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-24 md:w-36 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${pct}%`, backgroundColor: status.hex }}
+                />
+              </div>
+              <span className="text-xs font-bold" style={{ color: status.hex }}>{pct}%</span>
+            </div>
+            <span
+              className="text-[11px] font-bold px-2.5 py-1 rounded-full hidden md:block"
+              style={{ backgroundColor: `${status.hex}20`, color: status.hex }}
+            >
+              {status.label}
             </span>
           </div>
         </div>
-        {/* Mini progress bar */}
-        <div className="h-1 bg-muted rounded-full mt-2 overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${pct}%`, backgroundColor: status.hex }}
-          />
-        </div>
       </div>
 
-      {/* Category sections - single column on mobile, 2-col on md+ */}
+      {/* Sections grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CategorySection title="Learning" points={4} icon={<BookOpen className="w-4 h-4" />} delay={0.05}>
-          <CheckboxItem field="hormoziWatched" label="Alex Hormozi video watched" />
-          <CheckboxItem field="marketingVideoWatched" label="Marketing/Agency video watched" />
-          <CheckboxItem field="threelearningsWritten" label="3 learnings written" />
-          <CheckboxItem field="oneImplementationWritten" label="1 implementation written" />
-        </CategorySection>
 
-        <CategorySection title="English Upgrade" points={4} icon={<Mic className="w-4 h-4" />} delay={0.1}>
-          <CheckboxItem field="listeningDone" label="20 min listening" />
-          <CheckboxItem field="speakingDone" label="20 min speaking" />
-          <CheckboxItem field="readingPagesDone" label="10 pages reading" />
-          <CheckboxItem field="fiveWordsLearned" label="5 new words learned" />
-        </CategorySection>
+        <Section title="Learning" pts={4} iconKey="learning" delay={0.05}>
+          <CheckRow id="hormozi" label="Alex Hormozi video watched" checked={!!data.hormoziWatched} onChange={v => updateField("hormoziWatched", v)} />
+          <CheckRow id="mktg" label="Marketing/Agency video watched" checked={!!data.marketingVideoWatched} onChange={v => updateField("marketingVideoWatched", v)} />
+          <CheckRow id="learn3" label="3 learnings written" checked={!!data.threelearningsWritten} onChange={v => updateField("threelearningsWritten", v)} />
+          <CheckRow id="impl1" label="1 implementation written" checked={!!data.oneImplementationWritten} onChange={v => updateField("oneImplementationWritten", v)} />
+        </Section>
 
-        <CategorySection title="Client Acquisition" points={3} icon={<Briefcase className="w-4 h-4" />} delay={0.15}>
-          <CheckboxItem field="contacted20Owners" label="Contacted 20 business owners" />
-          <CheckboxItem field="followedUpLeads" label="Followed up with leads" />
-          <CheckboxItem field="salesCallBooked" label="Sales call booked or attended" />
-          <div className="pt-1 space-y-1 border-t border-border/30 mt-1">
-            <NumberItem field="leadsContacted" label="Leads contacted" />
-            <NumberItem field="followUps" label="Follow-ups sent" />
-            <NumberItem field="calls" label="Calls held" />
+        <Section title="English Upgrade" pts={4} iconKey="english" delay={0.1}>
+          <CheckRow id="listen" label="20 min listening" checked={!!data.listeningDone} onChange={v => updateField("listeningDone", v)} />
+          <CheckRow id="speak" label="20 min speaking" checked={!!data.speakingDone} onChange={v => updateField("speakingDone", v)} />
+          <CheckRow id="read10" label="10 pages reading" checked={!!data.readingPagesDone} onChange={v => updateField("readingPagesDone", v)} />
+          <CheckRow id="words5" label="5 new words learned" checked={!!data.fiveWordsLearned} onChange={v => updateField("fiveWordsLearned", v)} />
+        </Section>
+
+        <Section title="Client Acquisition" pts={3} iconKey="sales" delay={0.15}>
+          <CheckRow id="owners20" label="Contacted 20 business owners" checked={!!data.contacted20Owners} onChange={v => updateField("contacted20Owners", v)} />
+          <CheckRow id="followup" label="Followed up with leads" checked={!!data.followedUpLeads} onChange={v => updateField("followedUpLeads", v)} />
+          <CheckRow id="salescall" label="Sales call booked or attended" checked={!!data.salesCallBooked} onChange={v => updateField("salesCallBooked", v)} />
+          <div className="pt-1 mt-1 border-t border-border/40 space-y-0.5">
+            <NumberRow label="Leads contacted" value={data.leadsContacted} onChange={v => updateField("leadsContacted", v)} />
+            <NumberRow label="Follow-ups sent" value={data.followUps} onChange={v => updateField("followUps", v)} />
+            <NumberRow label="Calls held" value={data.calls} onChange={v => updateField("calls", v)} />
           </div>
-        </CategorySection>
+        </Section>
 
-        <CategorySection title="Pixocraft Growth" points={2} icon={<Zap className="w-4 h-4" />} delay={0.2}>
-          <CheckboxItem field="postedContent" label="Posted 1 reel or carousel" />
-          <CheckboxItem field="wroteImprovementIdea" label="Wrote 1 improvement idea" />
-          <div className="pt-1">
+        <Section title="Pixocraft Growth" pts={2} iconKey="growth" delay={0.2}>
+          <CheckRow id="reel" label="Posted 1 reel or carousel" checked={!!data.postedContent} onChange={v => updateField("postedContent", v)} />
+          <CheckRow id="idea" label="Wrote 1 improvement idea" checked={!!data.wroteImprovementIdea} onChange={v => updateField("wroteImprovementIdea", v)} />
+          <div className="px-3 pt-2 pb-1">
             <Textarea
               placeholder="What can we improve?"
               value={improvementIdea}
@@ -138,97 +224,116 @@ export default function Checklist() {
                 setImprovementIdea(e.target.value);
                 debounce(ideaTimer, () => updateField("improvementIdea", e.target.value));
               }}
-              className="resize-none bg-background/60 focus-visible:ring-primary text-sm mt-1"
+              className="resize-none bg-muted/30 border-border/50 focus-visible:ring-primary text-sm min-h-[72px]"
               rows={2}
             />
           </div>
-        </CategorySection>
+        </Section>
 
-        <CategorySection title="Service & Operations" points={2} icon={<Settings className="w-4 h-4" />} delay={0.25}>
-          <CheckboxItem field="clientTasksCompleted" label="Client tasks completed" />
-          <CheckboxItem field="processImproved" label="Process improved" />
-        </CategorySection>
+        <Section title="Service & Operations" pts={2} iconKey="ops" delay={0.25}>
+          <CheckRow id="clienttasks" label="Client tasks completed" checked={!!data.clientTasksCompleted} onChange={v => updateField("clientTasksCompleted", v)} />
+          <CheckRow id="process" label="Process improved" checked={!!data.processImproved} onChange={v => updateField("processImproved", v)} />
+        </Section>
 
-        <CategorySection title="Knowledge Building" icon={<Brain className="w-4 h-4" />} delay={0.3}>
-          <CheckboxItem field="read20Pages" label="Read 20 pages" />
-          <Input
-            placeholder="Book name"
-            value={bookName}
-            onChange={(e) => {
-              setBookName(e.target.value);
-              debounce(bookTimer, () => updateField("bookName", e.target.value));
-            }}
-            className="bg-background/60 focus-visible:ring-primary text-sm mt-2 h-9"
-          />
-        </CategorySection>
+        <Section title="Knowledge Building" iconKey="knowledge" delay={0.3}>
+          <CheckRow id="read20" label="Read 20 pages" checked={!!data.read20Pages} onChange={v => updateField("read20Pages", v)} />
+          <div className="px-3 pt-1 pb-2">
+            <Input
+              placeholder="Book name"
+              value={bookName}
+              onChange={(e) => {
+                setBookName(e.target.value);
+                debounce(bookTimer, () => updateField("bookName", e.target.value));
+              }}
+              className="h-9 bg-muted/30 border-border/50 focus-visible:ring-primary text-sm"
+            />
+          </div>
+        </Section>
 
-        <CategorySection title="Fitness" points={3} icon={<Dumbbell className="w-4 h-4" />} delay={0.35}>
-          <CheckboxItem field="workoutCompleted" label="Workout completed" />
-          <CheckboxItem field="threeLifresWater" label="3 litres water" />
-          <CheckboxItem field="sevenHoursSleep" label="7 hours sleep" />
-        </CategorySection>
+        <Section title="Fitness" pts={3} iconKey="fitness" delay={0.35}>
+          <CheckRow id="workout" label="Workout completed" checked={!!data.workoutCompleted} onChange={v => updateField("workoutCompleted", v)} />
+          <CheckRow id="water" label="3 litres water" checked={!!data.threeLifresWater} onChange={v => updateField("threeLifresWater", v)} />
+          <CheckRow id="sleep" label="7 hours sleep" checked={!!data.sevenHoursSleep} onChange={v => updateField("sevenHoursSleep", v)} />
+        </Section>
 
-        <CategorySection title="Founder Thinking" points={4} icon={<Activity className="w-4 h-4" />} delay={0.4}>
-          <CheckboxItem field="revenueActivity" label="Revenue-growing activity done" />
-          <CheckboxItem field="brandActivity" label="Brand-growing activity done" />
-          <CheckboxItem field="skillBuilding" label="Skill-building activity done" />
-          <CheckboxItem field="avoidedTimeWaste" label="Avoided time-wasting activities" />
-        </CategorySection>
+        <Section title="Founder Thinking" pts={4} iconKey="founder" delay={0.4}>
+          <CheckRow id="revact" label="Revenue-growing activity done" checked={!!data.revenueActivity} onChange={v => updateField("revenueActivity", v)} />
+          <CheckRow id="brandact" label="Brand-growing activity done" checked={!!data.brandActivity} onChange={v => updateField("brandActivity", v)} />
+          <CheckRow id="skillbuild" label="Skill-building activity done" checked={!!data.skillBuilding} onChange={v => updateField("skillBuilding", v)} />
+          <CheckRow id="notimewaste" label="Avoided time-wasting activities" checked={!!data.avoidedTimeWaste} onChange={v => updateField("avoidedTimeWaste", v)} />
+        </Section>
+
       </div>
 
       {/* Daily Metrics */}
-      <Card className="bg-card/50 backdrop-blur border-border/50">
-        <CardContent className="p-4 space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Daily Metrics</h3>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Revenue Today (₹)</Label>
-              <Input
-                type="number"
-                className="bg-background/60 border-border/50 focus-visible:ring-primary font-mono"
-                value={data.revenueGenerated || ""}
-                onChange={(e) => updateField("revenueGenerated", Number(e.target.value) || 0)}
-                placeholder="0"
-              />
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+        <Card className="bg-card border-border/60">
+          <CardHeader className="px-5 py-4 pb-3 border-b border-border/50">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                <Activity className="w-4 h-4" />
+              </div>
+              <span className="font-semibold text-sm">Daily Metrics</span>
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">New Leads</Label>
-              <Input
-                type="number"
-                className="bg-background/60 border-border/50 focus-visible:ring-primary font-mono"
-                value={data.newLeadsContacted || ""}
-                onChange={(e) => updateField("newLeadsContacted", Number(e.target.value) || 0)}
-                placeholder="0"
-              />
+          </CardHeader>
+          <CardContent className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    Revenue Generated Today (₹)
+                  </Label>
+                  <Input
+                    type="number"
+                    className="bg-muted/30 border-border/50 focus-visible:ring-primary font-mono text-base h-11"
+                    value={data.revenueGenerated || ""}
+                    onChange={(e) => updateField("revenueGenerated", Number(e.target.value) || 0)}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    New Leads Contacted
+                  </Label>
+                  <Input
+                    type="number"
+                    className="bg-muted/30 border-border/50 focus-visible:ring-primary font-mono text-base h-11"
+                    value={data.newLeadsContacted || ""}
+                    onChange={(e) => updateField("newLeadsContacted", Number(e.target.value) || 0)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex items-center justify-between bg-muted/30 border border-border/50 px-4 py-3 rounded-xl">
+                  <Label className="text-sm font-medium cursor-pointer" htmlFor="contentPosted">
+                    Content posted today?
+                  </Label>
+                  <Switch
+                    id="contentPosted"
+                    checked={!!data.contentPosted}
+                    onCheckedChange={(v) => updateField("contentPosted", v)}
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                  Notes & Reflections
+                </Label>
+                <Textarea
+                  className="resize-none bg-muted/30 border-border/50 focus-visible:ring-primary text-sm min-h-[160px] h-full"
+                  placeholder="How did today go? Wins? Blockers? What to improve?"
+                  value={notes}
+                  onChange={(e) => {
+                    setNotes(e.target.value);
+                    debounce(notesTimer, () => updateField("notes", e.target.value));
+                  }}
+                  rows={6}
+                />
+              </div>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between bg-muted/20 p-3 rounded-xl">
-            <Label className="text-sm font-medium cursor-pointer" htmlFor="contentPostedToggle">Content posted today?</Label>
-            <Switch
-              id="contentPostedToggle"
-              checked={!!data.contentPosted}
-              onCheckedChange={(c) => updateField("contentPosted", c)}
-              className="data-[state=checked]:bg-primary"
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Notes / Reflections</Label>
-            <Textarea
-              className="resize-none bg-background/60 focus-visible:ring-primary text-sm"
-              placeholder="How did today go? Wins? Blockers?"
-              value={notes}
-              onChange={(e) => {
-                setNotes(e.target.value);
-                debounce(notesTimer, () => updateField("notes", e.target.value));
-              }}
-              rows={4}
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

@@ -51,8 +51,8 @@ export function useTheme() {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("pixocraft_theme");
       if (saved) return saved === "dark";
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
+    // Default to dark — this is a premium dark-first app
     return true;
   });
 
@@ -67,7 +67,12 @@ export function useTheme() {
     }
   }, [isDark]);
 
-  const toggleTheme = () => setIsDark(!isDark);
+  const toggleTheme = () => setIsDark(prev => !prev);
 
   return { isDark, toggleTheme };
+}
+
+/** Returns today's date string in local time — "YYYY-MM-DD" */
+export function getLocalDateStr(date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
