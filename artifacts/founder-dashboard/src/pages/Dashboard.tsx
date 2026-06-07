@@ -3,44 +3,49 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { useChallenge } from "../hooks/useChallenge";
 import { calculateScore, getStatus, calculateStreak, getCurrentDay } from "../lib/scoring";
-import { StatCard } from "../components/StatCard";
-import { 
-  Flame, CheckCircle2, Target, CalendarDays, TrendingUp, DollarSign
-} from "lucide-react";
+import { Flame, CheckCircle2, Target, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 
 const QUOTES = [
-  "You cannot outwork a bad strategy, but a good strategy without execution is nothing.",
   "Discipline equals freedom.",
-  "The only difference between a good day and a bad day is your attitude.",
   "Do the boring work.",
-  "Focus on the inputs, the outputs will take care of themselves.",
-  "Consistency is the ultimate growth hack.",
-  "Nobody cares. Work harder.",
   "Action cures fear.",
-  "If you want to be in the top 1%, you have to do what the 99% won't.",
-  "Small daily improvements over time lead to stunning results."
+  "Nobody cares. Work harder.",
+  "Consistency is the ultimate growth hack.",
+  "Focus on the inputs, the outputs will take care of themselves.",
+  "Small daily improvements over time lead to stunning results.",
+  "If you want to be in the top 1%, do what the 99% won't.",
+  "You cannot outwork a bad strategy, but good strategy without execution is nothing.",
+  "The only difference between a good day and a bad day is your attitude.",
 ];
+
+const STATUS_COLORS: Record<string, string> = {
+  excellent: "#22c55e",
+  good: "#3b82f6",
+  average: "#f59e0b",
+  poor: "#ef4444",
+};
 
 export default function Dashboard() {
   const { days, challengeStart } = useChallenge();
-  
+
   const todayStr = new Date().toISOString().split("T")[0];
   const todayData = days[todayStr];
   const todayScore = todayData ? calculateScore(todayData) : 0;
   const todayStatus = getStatus(todayScore);
   const currentDayNum = getCurrentDay(challengeStart);
-  
-  const { current: currentStreak, longest: longestStreak } = useMemo(() => calculateStreak(days, todayStr), [days, todayStr]);
-  
+  const progress = Math.min(100, Math.round((currentDayNum / 60) * 100));
+
+  const { current: currentStreak, longest: longestStreak } = useMemo(
+    () => calculateStreak(days, todayStr),
+    [days, todayStr]
+  );
+
   const totalTasksCompleted = useMemo(() => {
     let total = 0;
-    Object.values(days).forEach(day => {
-      // Sum boolean values that are true
-      Object.values(day).forEach(val => {
-        if (val === true) total++;
-      });
+    Object.values(days).forEach((day) => {
+      Object.values(day).forEach((val) => { if (val === true) total++; });
     });
     return total;
   }, [days]);
@@ -57,7 +62,7 @@ export default function Dashboard() {
         dayName: date.toLocaleDateString("en-US", { weekday: "short" }),
         score,
         status: data ? getStatus(score) : null,
-        hasData: !!data
+        hasData: !!data,
       });
       date.setDate(date.getDate() - 1);
     }
@@ -66,116 +71,146 @@ export default function Dashboard() {
 
   const quoteOfTheDay = QUOTES[currentDayNum % QUOTES.length];
 
+  const stats = [
+    {
+      label: "Today's Score",
+      value: `${todayScore}/22`,
+      sub: todayData ? todayStatus.label : "Not started",
+      icon: <Target className="w-5 h-5" />,
+      color: "text-primary",
+    },
+    {
+      label: "Streak",
+      value: `${currentStreak}d`,
+      sub: "current",
+      icon: <Flame className="w-5 h-5" />,
+      color: "text-orange-400",
+    },
+    {
+      label: "Best Streak",
+      value: `${longestStreak}d`,
+      sub: "all time",
+      icon: <CalendarDays className="w-5 h-5" />,
+      color: "text-violet-400",
+    },
+    {
+      label: "Tasks Done",
+      value: totalTasksCompleted,
+      sub: "total",
+      icon: <CheckCircle2 className="w-5 h-5" />,
+      color: "text-emerald-400",
+    },
+  ];
+
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back. It's Day {currentDayNum} of your growth sprint.</p>
-        </div>
-        <Link href="/checklist">
-          <Button size="lg" className="shadow-lg shadow-primary/20 w-full md:w-auto">
-            <CheckCircle2 className="mr-2 w-5 h-5" />
-            Today's Checklist
-          </Button>
-        </Link>
-      </div>
-
-      {/* Progress */}
-      <Card className="bg-card/40 backdrop-blur-md border-border/50">
-        <CardContent className="p-6">
-          <div className="flex justify-between items-end mb-2">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Sprint Progress</p>
-              <h3 className="text-2xl font-bold">{Math.round((currentDayNum / 60) * 100)}%</h3>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-muted-foreground">Day</p>
-              <h3 className="text-2xl font-bold">{currentDayNum} / 60</h3>
-            </div>
-          </div>
-          <div className="h-3 bg-muted rounded-full overflow-hidden mt-4">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${(currentDayNum / 60) * 100}%` }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="h-full bg-primary"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Today's Score" 
-          value={`${todayScore}/22`} 
-          subtitle={todayData ? todayStatus.label : "Not started"}
-          icon={<Target className="w-5 h-5" />}
-          delay={0.1}
-        />
-        <StatCard 
-          title="Current Streak" 
-          value={`${currentStreak} days`} 
-          icon={<Flame className="w-5 h-5" />}
-          delay={0.2}
-        />
-        <StatCard 
-          title="Longest Streak" 
-          value={`${longestStreak} days`} 
-          icon={<CalendarDays className="w-5 h-5" />}
-          delay={0.3}
-        />
-        <StatCard 
-          title="Tasks Completed" 
-          value={totalTasksCompleted} 
-          icon={<CheckCircle2 className="w-5 h-5" />}
-          delay={0.4}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Days */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-bold">Recent Days</h2>
-          <div className="flex gap-2 h-32">
-            {recentDays.map((day, i) => (
-              <div key={day.date} className="flex-1 flex flex-col justify-end gap-2 group">
-                <div className="flex-1 bg-muted/50 rounded-md relative overflow-hidden flex items-end">
-                  {day.hasData && day.status && (
-                    <motion.div 
-                      initial={{ height: 0 }}
-                      animate={{ height: `${(day.score / 22) * 100}%` }}
-                      transition={{ duration: 0.5, delay: i * 0.05 }}
-                      className="w-full absolute bottom-0 left-0"
-                      style={{ backgroundColor: day.status.hex, opacity: 0.8 }}
-                    />
-                  )}
-                  {day.hasData && (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm z-10 text-sm font-bold">
-                      {day.score}
-                    </div>
-                  )}
-                </div>
-                <div className="text-center text-xs font-medium text-muted-foreground uppercase">
-                  {day.dayName}
-                </div>
+    <div className="space-y-5">
+      {/* Sprint Progress */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+        <Card className="bg-card/50 backdrop-blur border-border/50 overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex justify-between items-end mb-3">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sprint Progress</p>
+                <p className="text-2xl font-bold mt-0.5">{progress}%</p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Quote */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold">Daily Fuel</h2>
-          <Card className="h-32 bg-card/40 backdrop-blur-md border-border/50 flex flex-col justify-center p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5 text-primary">
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+              <div className="text-right">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Day</p>
+                <p className="text-2xl font-bold mt-0.5">{currentDayNum} <span className="text-muted-foreground text-base font-normal">/ 60</span></p>
+              </div>
             </div>
-            <p className="text-lg italic font-serif text-foreground/90 leading-snug">"{quoteOfTheDay}"</p>
-          </Card>
-        </div>
+            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                className="h-full bg-primary rounded-full"
+              />
+            </div>
+            <Link href="/checklist">
+              <Button className="w-full mt-4 shadow-md shadow-primary/20 h-11 font-semibold">
+                <CheckCircle2 className="mr-2 w-4 h-4" />
+                Fill Today's Checklist
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Stats 2x2 grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {stats.map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 + i * 0.07 }}
+          >
+            <Card className="bg-card/50 backdrop-blur border-border/50 hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className={`mb-2 ${s.color}`}>{s.icon}</div>
+                <p className="text-2xl font-bold leading-none">{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-1.5 font-medium">{s.label}</p>
+                {s.sub && <p className="text-[11px] text-muted-foreground/70 mt-0.5">{s.sub}</p>}
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
+
+      {/* Daily Quote */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+        <Card className="bg-card/50 backdrop-blur border-border/50 relative overflow-hidden">
+          <div className="absolute top-2 left-3 text-5xl font-serif text-primary/10 leading-none select-none">&ldquo;</div>
+          <CardContent className="p-5 pt-7">
+            <p className="text-base font-medium italic text-foreground/90 leading-relaxed">{quoteOfTheDay}</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Recent 7 Days */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Last 7 Days</h2>
+        <Card className="bg-card/50 backdrop-blur border-border/50">
+          <CardContent className="p-4">
+            <div className="flex gap-1.5 h-20 items-end">
+              {recentDays.map((day, i) => {
+                const barHeight = day.hasData ? Math.max(10, (day.score / 22) * 100) : 0;
+                const color = day.status ? STATUS_COLORS[day.status.key] : undefined;
+                return (
+                  <div key={day.date} className="flex-1 flex flex-col items-center gap-1.5 group">
+                    <div className="flex-1 w-full bg-muted/40 rounded-md relative overflow-hidden flex items-end">
+                      {day.hasData && color && (
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${barHeight}%` }}
+                          transition={{ duration: 0.5, delay: i * 0.05 }}
+                          className="w-full absolute bottom-0 left-0 rounded-md"
+                          style={{ backgroundColor: color, opacity: 0.85 }}
+                        />
+                      )}
+                    </div>
+                    <span className="text-[9px] font-semibold text-muted-foreground uppercase">{day.dayName}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Legend */}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40">
+              {[
+                { label: "Excellent", color: STATUS_COLORS.excellent },
+                { label: "Good", color: STATUS_COLORS.good },
+                { label: "Average", color: STATUS_COLORS.average },
+                { label: "Poor", color: STATUS_COLORS.poor },
+              ].map((l) => (
+                <div key={l.label} className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
+                  <span className="text-[10px] text-muted-foreground">{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
