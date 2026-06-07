@@ -154,8 +154,8 @@ export default function Checklist() {
 
   return (
     <div className="space-y-5">
-      {/* Sticky score header */}
-      <div className="sticky top-14 z-10 -mx-4 md:-mx-8 px-4 md:px-8 py-3 bg-background/90 backdrop-blur-md border-b border-border/50">
+      {/* Score header */}
+      <div className="rounded-2xl border border-border/60 bg-card px-4 md:px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground font-medium hidden sm:block">{dateLabel}</p>
           <p className="text-sm text-muted-foreground font-medium sm:hidden">
