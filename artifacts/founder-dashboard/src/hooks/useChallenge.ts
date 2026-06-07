@@ -36,13 +36,19 @@ export function useChallenge() {
     setDays({});
   }, []);
 
+  const refresh = useCallback(() => {
+    setDays(storage.getDays());
+    const start = storage.getChallengeStart();
+    if (start) setChallengeStart(start);
+  }, []);
+
   return {
     days,
     challengeStart,
     getDay,
     updateDay,
     resetChallenge,
-    refreshDays: () => setDays(storage.getDays()),
+    refreshDays: refresh,
   };
 }
 

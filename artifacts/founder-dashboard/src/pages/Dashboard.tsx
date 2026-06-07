@@ -201,32 +201,36 @@ export default function Dashboard() {
                 </Link>
               </div>
 
-              <div className="flex gap-2 h-28 items-end">
+              {/* Bar chart — explicit height, default items-stretch so flex-1 works inside */}
+              <div className="flex gap-2" style={{ height: "112px" }}>
                 {recentDays.map((day, i) => {
-                  const barH = day.hasData ? Math.max(8, (day.score / 22) * 100) : 0;
+                  const barH = day.hasData ? Math.max(6, Math.round((day.score / 22) * 100)) : 0;
                   const color = day.status ? STATUS_COLOR[day.status.key] : undefined;
                   return (
-                    <div key={day.date} className="flex-1 flex flex-col items-center gap-2 group">
-                      <div className="text-[10px] font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div key={day.date} className="flex-1 flex flex-col items-center gap-1 group">
+                      {/* Score tooltip on hover */}
+                      <span className="text-[10px] font-bold text-muted-foreground h-3.5 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                         {day.hasData ? day.score : ""}
+                      </span>
+                      {/* Bar background — flex-1 fills the remaining height */}
+                      <div className="flex-1 w-full relative rounded-lg overflow-hidden bg-muted/30">
+                        {/* Today top indicator */}
+                        {day.isToday && (
+                          <div className="absolute inset-x-0 top-0 h-0.5 bg-primary/50 rounded-t-lg z-10" />
+                        )}
+                        {/* Colored fill grows from bottom */}
+                        {day.hasData && color && (
+                          <motion.div
+                            className="absolute bottom-0 left-0 right-0"
+                            initial={{ height: 0 }}
+                            animate={{ height: `${barH}%` }}
+                            transition={{ duration: 0.55, delay: 0.3 + i * 0.05, ease: "easeOut" }}
+                            style={{ backgroundColor: color, opacity: day.isToday ? 1 : 0.8 }}
+                          />
+                        )}
                       </div>
-                      <div className="flex-1 w-full flex items-end">
-                        <div className="w-full bg-muted/40 rounded-lg overflow-hidden relative" style={{ height: "100%" }}>
-                          {day.hasData && color && (
-                            <motion.div
-                              initial={{ height: 0 }}
-                              animate={{ height: `${barH}%` }}
-                              transition={{ duration: 0.6, delay: 0.4 + i * 0.06, ease: "easeOut" }}
-                              className="absolute bottom-0 left-0 right-0 rounded-lg"
-                              style={{ backgroundColor: color, opacity: day.isToday ? 1 : 0.75 }}
-                            />
-                          )}
-                          {day.isToday && (
-                            <div className="absolute inset-x-0 top-0 h-0.5 bg-primary/40 rounded" />
-                          )}
-                        </div>
-                      </div>
-                      <span className={`text-[10px] font-semibold uppercase ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
+                      {/* Day label */}
+                      <span className={`text-[10px] font-bold uppercase h-3.5 flex items-center ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
                         {day.dayName}
                       </span>
                     </div>
