@@ -127,19 +127,11 @@ export default function Checklist() {
     });
   };
 
-  const makeDebounce = () => {
-    const t = useRef<NodeJS.Timeout>();
-    return (fn: () => void, ms = 400) => {
-      clearTimeout(t.current);
-      t.current = setTimeout(fn, ms);
-    };
-  };
+  const ideaTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const bookTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const notesTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const ideaTimer = useRef<NodeJS.Timeout>();
-  const bookTimer = useRef<NodeJS.Timeout>();
-  const notesTimer = useRef<NodeJS.Timeout>();
-
-  const debounce = (timer: React.MutableRefObject<NodeJS.Timeout | undefined>, fn: () => void, ms = 400) => {
+  const debounce = (timer: React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>, fn: () => void, ms = 400) => {
     clearTimeout(timer.current);
     timer.current = setTimeout(fn, ms);
   };
