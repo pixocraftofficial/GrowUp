@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "60-Day Founder Dashboard"
+version = "1.0.0"
+id = "artifacts/founder-dashboard"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23365
+
+[services.development]
+run = "pnpm --filter @workspace/founder-dashboard run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/founder-dashboard", "run", "build" ]
+publicDir = "artifacts/founder-dashboard/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23365"
+BASE_PATH = "/"

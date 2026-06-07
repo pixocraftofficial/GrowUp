@@ -1,0 +1,195 @@
+Create a personal dashboard for agency founders to track daily execution during a 60-day growth challenge.
+
+The app must work completely offline and save all data in browser Local Storage.
+
+No backend required.
+
+Core Features
+Dashboard
+
+Show:
+
+Current Day Number (1–60)
+Total Completion Percentage
+Today's Score
+Current Streak
+Longest Streak
+Total Tasks Completed
+
+Create beautiful dashboard cards.
+
+Daily Checklist Categories
+Learning
+
+Checkboxes:
+
+Alex Hormozi video watched
+Marketing/Agency video watched
+3 learnings written
+1 implementation written
+English Upgrade
+
+Checkboxes:
+
+20 min listening
+20 min speaking
+10 pages reading
+5 new words learned
+Client Acquisition
+
+Checkboxes:
+
+Contacted 20 business owners
+Followed up with leads
+Sales call booked or attended
+
+Input fields:
+
+Number of leads contacted
+Number of follow-ups
+Number of calls
+Pixocraft Growth
+
+Checkboxes:
+
+Posted 1 reel or carousel
+Wrote 1 improvement idea
+
+Text field:
+
+Improvement idea
+Service & Operations
+
+Checkboxes:
+
+Client tasks completed
+Process improved
+Knowledge Building
+
+Checkbox:
+
+Read 20 pages
+
+Input:
+
+Book name
+Fitness
+
+Checkboxes:
+
+Workout completed
+3 litres water
+7 hours sleep
+Founder Thinking
+
+Checkboxes:
+
+Revenue-growing activity completed
+Brand-growing activity completed
+Skill-building activity completed
+Avoided time-wasting activities
+Daily Metrics Section
+
+Input fields:
+
+Revenue Generated Today (₹)
+New Leads Contacted
+Content Posted (Yes/No)
+Notes
+Scoring System
+
+Automatically calculate:
+
+Learning = 4 points
+
+English = 4 points
+
+Sales = 3 points
+
+Growth = 2 points
+
+Operations = 2 points
+
+Fitness = 3 points
+
+Founder Thinking = 4 points
+
+Maximum = 22 points
+
+Show:
+
+Total score
+Percentage
+Status
+
+Rules:
+
+18–22 = Excellent Day
+
+15–17 = Good Day
+
+12–14 = Average Day
+
+Below 12 = Needs Improvement
+
+Analytics Page
+
+Create charts for:
+
+Revenue Trend
+Daily Scores
+Leads Contacted
+Streak History
+Completion Percentage
+
+Use Chart.js.
+
+Calendar View
+
+Create a monthly calendar.
+
+Each day should show:
+
+Green = Excellent
+
+Blue = Good
+
+Yellow = Average
+
+Red = Poor
+
+Clicking a day opens saved data.
+
+Local Storage
+
+Save everything automatically.
+
+Requirements:
+
+Auto save every change
+Data persists after refresh
+No database needed
+No login required
+UI Design
+
+Design style:
+
+Premium SaaS Dashboard
+Dark Theme
+Glassmorphism Cards
+Smooth Animations
+Fully Responsive
+Mobile First
+Modern Typography
+Professional Founder Dashboard Feel
+Extra Features
+
+Add:
+
+Daily motivational quote
+Progress bar for 60-day challenge
+Export data as JSON
+Import backup JSON
+Reset challenge button
+Weekly performance summary
+Monthly performance summary
